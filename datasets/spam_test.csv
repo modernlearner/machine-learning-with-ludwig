@@ -1,0 +1,8 @@
+"subject","content","spam"
+"hello!","Hey awesome article on machine learning, thanks for writing it","not_spam"
+"you are a winner","congratulations, you just won a trip to a vacation destination","spam"
+"AI meeting","Hi everyone, as you all know, tomorrow is our meeting on AI and machine learning. Please accept the meeting invite that should be arriving in your inbox soon. Thanks and looking forward to the meeting!","not_spam"
+"Limited Time Offer","Hello you are entitled to this limited time offer, click here","spam"
+"meeting","Hi. Thanks for reaching out. Let's setup a meeting for tomorrow","not_spam"
+"form information required","Hi, attached is the form needed to be filled out. Can you get it back to me by EOD tomorrow? Thanks!","not_spam"
+"amazing deal!","Hi! On this very special day, you are entitled to an amazing deal. Click here to check it out","spam"
