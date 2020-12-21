@@ -1,3 +1,5 @@
+Copyright (C) 2020 Modern Learn Inc.
+
 ## Setup
 
 Install virtual env and create the environment:
