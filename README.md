@@ -16,6 +16,14 @@ Install English-specific encodings for spacy language processing:
 
     python -m spacy download en
 
+Check for GPU support:
+
+    python
+    >>> from tensorflow.python.client import device_lib
+    >>> device_lib.list_local_devices()
+
+If you only see "CPU" in the devices list, follow the guide to ensure GPU support is enabled for Tensorflow: https://www.tensorflow.org/install/gpu
+
 Run the code:
 
     python basic.py
