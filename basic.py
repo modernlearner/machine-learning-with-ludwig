@@ -1,8 +1,9 @@
-# Disable output of logging messages from TensorFlow
+# Disable output of logging messages from TensorFlow if it's too noisy
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+import os.path
 
 import pandas as pd
 from ludwig.api import LudwigModel
@@ -42,29 +43,52 @@ base_model_definition = {
     'output_features': output_features,
 }
 
-# Defining and training the model
-base_model = LudwigModel(base_model_definition)
-training_stats = base_model.train(data_csv='./datasets/spam_train.csv')
-
-# Testing the model on data with known output
-test_result = base_model.test(data_csv='./datasets/spam_test.csv')[1]
+def load_or_create_model(model_dir, model_config, **model_kwargs):
+    if os.path.exists(model_dir):
+        print('Loading the model: {}'.format(model_dir))
+        return (LudwigModel.load(model_dir, **model_kwargs), True)
+    else:
+        print('Defining the model')
+        return (LudwigModel(model_config, **model_kwargs), False)
+        
+base_model, base_model_loaded = load_or_create_model(
+    'trained/basic', base_model_definition, gpus=[0], gpu_memory_limit=2000
+)
+if base_model_loaded:
+    training_stats, preprocessed_data, output_directory = base_model.evaluate(
+        dataset='./datasets/spam_test.csv'
+    )
+else:
+    print('Training the model')
+    training_stats, preprocessed_data, output_directory = base_model.train(
+        training_set='./datasets/spam_train.csv',
+        test_set='./datasets/spam_test.csv',
+        skip_save_processed_input=True,
+    )
+    base_model.save('trained/basic')
+    
+print(training_stats)
 """
+visualize.learning_curves(
+    [{ 'training': training_stats }],
+    None
+)
 visualize.confusion_matrix(
-    test_stats_per_model=[test_result],
-    metadata=base_model.train_set_metadata,
-    output_feature_name='spam',
+    test_stats_per_model={ 'base_model': training_stats['spam'] },
+    metadata=preprocessed_data,
+    output_feature_name=None,
     top_n_classes=[3],
     normalize=True,
 )
 visualize.frequency_vs_f1(
-    test_stats_per_model=[test_result],
-    metadata=base_model.train_set_metadata,
+    test_stats_per_model=training_stats,
+    metadata=preprocessed_data,
     output_feature_name='spam',
     top_n_classes=[3],
 )
 """
 
-# Creating a 2nd model classifier with some adjustments
+print('Creating a 2nd model classifier with some adjustments')
 other_model_definition = base_model_definition.copy()
 other_model_definition['input_features'] = [
     {
@@ -82,11 +106,8 @@ other_model_definition['input_features'] = [
         },
         'encoder': 'stacked_parallel_cnn',
         'reduce_output': 'attention',
-        'activation': 'tanh', # Activation used for *all* layers.
-                              # If 'tanh' is used here, the runtime is ~33 seconds.
-                              # If 'relu' is used, runtime drops to ~15 seconds.
-                              # However, with 'tanh', training accuracy is higher.
-        'num_filters': 51,
+        'activation': 'relu', # Activation used for *all* layers.
+        'num_filters': 32,
         'stacked_layers': [
             [
                 { 'filter_size': 4 },
@@ -107,23 +128,35 @@ other_model_definition['input_features'] = [
     },
 ]
 
-other_model = LudwigModel(other_model_definition)
-other_model.train(data_csv='./datasets/spam_train.csv')
-other_model_test_result = other_model.test(data_csv='./datasets/spam_test.csv')[1]
-
-# Comparing the testing results of the models
-visualize.compare_performance(
-    test_stats_per_model=[test_result, other_model_test_result],
-    output_feature_name='spam',
-    model_names=['Base Model', 'Other Model'],
+other_model, other_model_loaded = load_or_create_model(
+    'trained/basic_other', other_model_definition, gpus=[0], gpu_memory_limit=2000
 )
+if other_model_loaded:
+    training_stats, preprocessed_data, output_directory = other_model.evaluate(
+        dataset='./datasets/spam_test.csv'
+    )
+else:
+    print('Training the model')
+    training_stats, preprocessed_data, output_directory = other_model.train(
+        training_set='./datasets/spam_train.csv',
+        test_set='./datasets/spam_test.csv',
+        skip_save_processed_input=True,
+    )
+    other_model.save('trained/basic_other')
+print(training_stats)
+# Comparing the testing results of the models
+# visualize.compare_performance(
+#     test_stats_per_model=[test_result, other_model_test_result],
+#     output_feature_name='spam',
+#     model_names=['Base Model', 'Other Model'],
+# )
 
 def print_predictions(unpredicted_emails, model):
-    prediction_result = model.predict(data_df=unpredicted_emails)
+    prediction_result, output_directory = model.predict(dataset=unpredicted_emails)
     emails = unpredicted_emails.join(prediction_result)
     for index, row in emails.iterrows():
         print('{} ({:.6f}): {} / {}'.format(
-            row.get('spam_predictions')[:4],
+            row.get('spam_predictions'),
             row.get('spam_probability'),
             row.get('subject')[0:30],
             row.get('content')[0:30],
