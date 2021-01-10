@@ -37,8 +37,7 @@ test_data = dataset.iloc[training_boundary:, :]
 print(training_data.head())
 print(test_data.head())
 
-training_stats = base_model.train(data_df=training_data)
-test_result = base_model.test(data_df=test_data)[1]
+training_stats = base_model.train(training_set=training_data, test_set=test_data)
 
 visualize.compare_performance(
     test_stats_per_model=[test_result],

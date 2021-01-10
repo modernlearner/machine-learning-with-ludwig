@@ -1,13 +1,13 @@
-Copyright (C) 2020 Modern Learn Inc.
+Copyright (C) 2020-2021 Modern Learner Inc.
 
 ## Setup
 
-Install virtual env and create the environment:
+Let's begin by installing virtual env and creating the environment:
 
     sudo pip install virtualenv
     virtualenv --python=python3.8 env
 
-Install the dependencies:
+Then let's install the dependencies:
 
     source env/bin/activate
     pip install -r requirements.txt
@@ -32,3 +32,5 @@ Run the code:
 
 ## Data Sources
 The training and test set and the associated images for the MNIST dataset are sourced from here: https://www.kaggle.com/c/digit-recognizer/data
+
+The Numerai data comes from their API and requires an account. You can download the latest training data after you login and upload your predictions.

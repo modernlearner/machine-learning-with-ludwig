@@ -9,7 +9,7 @@ import pandas as pd
 from ludwig.api import LudwigModel
 from ludwig import visualize
 
-# Definition of input features
+# Definition of input features, for encoder see: https://ludwig-ai.github.io/ludwig-docs/user_guide/#stacked-parallel-cnn-encoder
 input_features = [
     {
         'name': 'subject',
@@ -25,7 +25,7 @@ input_features = [
             'lowercase': True,
         },
         'encoder': 'stacked_parallel_cnn',
-        'reduce_output': 'attention',
+        'reduce_output': 'sum',
         'activation': 'relu',
     },
 ]
@@ -50,43 +50,22 @@ def load_or_create_model(model_dir, model_config, **model_kwargs):
     else:
         print('Defining the model')
         return (LudwigModel(model_config, **model_kwargs), False)
-        
+
 base_model, base_model_loaded = load_or_create_model(
     'trained/basic', base_model_definition, gpus=[0], gpu_memory_limit=2000
 )
-if base_model_loaded:
-    training_stats, preprocessed_data, output_directory = base_model.evaluate(
-        dataset='./datasets/spam_test.csv'
-    )
-else:
+if not base_model_loaded:
     print('Training the model')
-    training_stats, preprocessed_data, output_directory = base_model.train(
+    base_model.train(
         training_set='./datasets/spam_train.csv',
         test_set='./datasets/spam_test.csv',
         skip_save_processed_input=True,
     )
     base_model.save('trained/basic')
-    
-print(training_stats)
-"""
-visualize.learning_curves(
-    [{ 'training': training_stats }],
-    None
-)
-visualize.confusion_matrix(
-    test_stats_per_model={ 'base_model': training_stats['spam'] },
-    metadata=preprocessed_data,
-    output_feature_name=None,
-    top_n_classes=[3],
-    normalize=True,
-)
-visualize.frequency_vs_f1(
-    test_stats_per_model=training_stats,
-    metadata=preprocessed_data,
-    output_feature_name='spam',
-    top_n_classes=[3],
-)
-"""
+stats = base_model.evaluate(
+    dataset='./datasets/spam_test.csv'
+)[0]
+print(stats)
 
 print('Creating a 2nd model classifier with some adjustments')
 other_model_definition = base_model_definition.copy()
@@ -104,25 +83,28 @@ other_model_definition['input_features'] = [
         'preprocessing': {
             'lowercase': True,
         },
-        'encoder': 'stacked_parallel_cnn',
-        'reduce_output': 'attention',
+        'encoder': 'bert', # See: https://ludwig-ai.github.io/ludwig-docs/user_guide/#bert-encoder
+        'reduce_output': 'avg',
         'activation': 'relu', # Activation used for *all* layers.
-        'num_filters': 32,
+        'num_filters': 64,
         'stacked_layers': [
             [
-                { 'filter_size': 4 },
-                { 'filter_size': 5 },
+                { 'filter_size': 2 },
                 { 'filter_size': 3 },
+                { 'filter_size': 4 },
+                { 'filter_size': 5 }
             ],
             [
                 { 'filter_size': 2 },
-                { 'filter_size': 2 },
-                { 'filter_size': 2 },
-            ],
-            [
                 { 'filter_size': 3 },
                 { 'filter_size': 4 },
-                { 'filter_size': 5 },
+                { 'filter_size': 5 }
+            ],
+            [
+                { 'filter_size': 2 },
+                { 'filter_size': 3 },
+                { 'filter_size': 4 },
+                { 'filter_size': 5 }
             ]
         ],
     },
@@ -131,26 +113,24 @@ other_model_definition['input_features'] = [
 other_model, other_model_loaded = load_or_create_model(
     'trained/basic_other', other_model_definition, gpus=[0], gpu_memory_limit=2000
 )
-if other_model_loaded:
-    training_stats, preprocessed_data, output_directory = other_model.evaluate(
-        dataset='./datasets/spam_test.csv'
-    )
-else:
+if not other_model_loaded:
     print('Training the model')
-    training_stats, preprocessed_data, output_directory = other_model.train(
+    other_model.train(
         training_set='./datasets/spam_train.csv',
         test_set='./datasets/spam_test.csv',
         skip_save_processed_input=True,
-    )
+    )[0]['training']
     other_model.save('trained/basic_other')
-print(training_stats)
+other_stats = other_model.evaluate(
+    dataset='./datasets/spam_test.csv'
+)[0]
+print(other_stats)
 # Comparing the testing results of the models
-# visualize.compare_performance(
-#     test_stats_per_model=[test_result, other_model_test_result],
-#     output_feature_name='spam',
-#     model_names=['Base Model', 'Other Model'],
-# )
-
+visualize.compare_performance(
+    test_stats_per_model=[stats, other_stats],
+    output_feature_name='spam',
+    model_names=['Base Model', 'Other Model'],
+)
 def print_predictions(unpredicted_emails, model):
     prediction_result, output_directory = model.predict(dataset=unpredicted_emails)
     emails = unpredicted_emails.join(prediction_result)

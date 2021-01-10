@@ -4,3 +4,5 @@ env/
 datasets/*.hdf5
 datasets/*.json
 results/
+datasets/numerai_*
+trained/
