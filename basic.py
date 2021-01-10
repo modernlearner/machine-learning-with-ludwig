@@ -85,7 +85,7 @@ other_model_definition['input_features'] = [
         },
         'encoder': 'bert', # See: https://ludwig-ai.github.io/ludwig-docs/user_guide/#bert-encoder
         'reduce_output': 'avg',
-        'activation': 'relu', # Activation used for *all* layers.
+        'activation': 'tanh', # Activation used for *all* layers.
         'num_filters': 64,
         'stacked_layers': [
             [
