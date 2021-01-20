@@ -1,1 +1,1 @@
-ludwig[text,viz]==0.3.1
+ludwig[text,viz]==0.3.2
