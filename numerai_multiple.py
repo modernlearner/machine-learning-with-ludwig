@@ -94,11 +94,10 @@ def generate_and_save_predictions(model):
     else:
         print('generating predictions using model')
         predictions, *other = model.predict(tournament_data)
-        result = tournament_data.join(predictions)
-        predictions = result
+        predictions = tournament_data.join(predictions)
 
     predictions_df = tournament_data['id'].to_frame()
-    predictions_df['prediction_kazutsugi'] = predictions['target'].to_frame()
+    predictions_df['prediction_kazutsugi'] = predictions['target_predictions'].to_frame()
     # TODO: need to figure out why there are some empty values instead of just filling them in with 0.0
     predictions_df.fillna(value=0.0, inplace=True)
     print(predictions_df.head())
