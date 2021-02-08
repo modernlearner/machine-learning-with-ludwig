@@ -87,16 +87,14 @@ def generate_and_save_predictions(model):
         'https://numerai-public-datasets.s3-us-west-2.amazonaws.com/latest_numerai_tournament_data.csv.xz',
         'datasets/numerai_tournament_data.csv'
     )
-    PREDICTION_CSV = './numerai_result.csv'
-    if os.path.exists(PREDICTION_CSV):
+    predictions_csv_path = './numerai_predictions.csv'
+    if os.path.exists(predictions_csv_path):
         print('loading already generated predictions')
-        predictions = pd.read_csv(PREDICTION_CSV)
+        predictions = pd.read_csv(predictions_csv_path)
     else:
         print('generating predictions using model')
         predictions, *other = model.predict(tournament_data)
         result = tournament_data.join(predictions)
-        print('saving prediction results to', PREDICTION_CSV)
-        result.to_csv(PREDICTION_CSV)
         predictions = result
 
     predictions_df = tournament_data['id'].to_frame()
@@ -106,7 +104,7 @@ def generate_and_save_predictions(model):
     print(predictions_df.head())
 
     print('Numerai predictions saved, login to the website and upload them')
-    predictions_df.to_csv('./numerai_predictions.csv', index=False)
+    predictions_df.to_csv(predictions_csv_path, index=False)
 
 # See: https://ludwig-ai.github.io/ludwig-docs/user_guide/#numerical-output-features-and-decoders
 MODEL_CONFIGS = [
