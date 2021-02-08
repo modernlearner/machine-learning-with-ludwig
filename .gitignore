@@ -6,3 +6,5 @@ datasets/*.json
 results/
 datasets/numerai_*
 trained/
+numerai_predictions.csv
+numerai_result.csv
